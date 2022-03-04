@@ -19,17 +19,20 @@ import android.widget.Toast;
 import java.util.Random;
 
 public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+
+    private final Joystick joystick; // Джойстик
+    private final Player player; // Игрок
+
     Bitmap image, wall;
     Paint paint;
-    float jumpCount = 10; // прыжок игрока
-    boolean isJump = false; // падать или нет
-    public static float iX, iY, tX = 0, tY = 0, wallX, wallY;
-    float dx = 0, dy = 0;
-    double k = 20; // velocity or koeff
-    Resources res;
+
+    public static float wallX, wallY;
+
+    public static Resources res;
+
     MyThread myThread;
     //контроль столкновений и размеров
-    float hi, wi;//ширина и высота изображения
+
     float hs, ws;//ширина и высота области рисования
     boolean isFirstDraw = true;
     GameMap gameMap;
@@ -40,12 +43,14 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
         super(context);
         getHolder().addCallback(this);
         res = getResources();
-        image = BitmapFactory.decodeResource(res, R.drawable.obito);
+
         wall = BitmapFactory.decodeResource(res, R.drawable.wall);
-        hi = image.getHeight();
-        wi = image.getWidth();
-        iX = 100;
-        iY = 100;
+
+
+
+        player = new Player();
+        joystick = new Joystick();
+
 
         paint = new Paint();
         paint.setColor(Color.YELLOW);
@@ -83,21 +88,27 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
             hs = getHeight();
             ws = getWidth();
             wallX = ws / 2;
-            isJump = false;
             Random random = new Random();
             wallY = random.nextInt((int)(hs - wall.getHeight() - 5));
             wallRect = new Rect((int)wallX, (int)wallY, (int)(wallX + wall.getWidth()),
                     (int)(wallY + wall.getHeight()));
             gameMap = new GameMap((int)ws, (int)hs, res);
 
-            iX = ws / 2;
-            iY = hs-100; //4 * hs / 5 ;
+            player.iX = ws / 2; // Параметры игрока
+            player.iY = hs-100; //4 * hs / 5 ; // Параметры игрока
+
             isFirstDraw = false;
 
         }
 
-        gameMap.draw(canvas);
-        canvas.drawBitmap(image, iX, iY, paint);
+        joystick.draw(); // Рисовать джойстик
+
+        gameMap.draw(canvas); // Рисовать карту
+
+        player.draw(canvas); // Рисовать игрока
+
+
+
         //canvas.drawBitmap(wall, wallX, wallY, paint);
         //canvas.drawLine(iX, iY, tX, tY, paint);
         //if(tX != 0)
@@ -109,54 +120,26 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 //            dx = 0;
 //        }
 
-        iX += dx;
-        iY += dy;
 
-
-
-        checkScreen();
+        update();
     }
 
-    private void checkScreen(){
-
-        // Отскок от экрана
-//        if(iY + hi >= hs || iY <= 0)
-//            dy = -dy;
-//        if(iX + wi >= ws || iX <= 0)
-//            dx = -dx;
-
-
-        // Падение
-
-        if ((jumpCount >= -10) && (isJump)){
-            iY -= jumpCount * Math.abs(jumpCount) *0.5;
-            jumpCount -= 1;
-            delta();
-        }
-
-        else {
-            jumpCount = 10;
-            isJump = false;
-            dx = 0;
-        }
-
+    private void update(){
+        player.update();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if(event.getAction() == MotionEvent.ACTION_DOWN){
-            tX = event.getX();
-            tY = event.getY();
-            isJump = true;
+
+            player.tX = event.getX();
+            player.tY = event.getY();
+            player.isJump = true;
         }
         return true;
     }
-    //расчет смещения картинки по x и y
-    void delta(){
-        double ro = Math.sqrt((tX- iX)*(tX- iX)+(tY-iY)*(tY-iY));
-        dx = (float) (k * (tX - iX)/ro);
-        //dy = (float) (k * (tY - iY)/ro);
-    }
+
+
 
 
 }
